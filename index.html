@@ -35,25 +35,6 @@
             transform: translateY(-5px);
         }
 
-        .listener-count {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 8px 16px;
-            border-radius: 50px;
-            width: fit-content;
-            margin-bottom: 25px;
-            font-size: 14px;
-            font-weight: 500;
-        }
-
-        .listener-count::before {
-            content: "👂";
-            font-size: 16px;
-        }
-
         .song-info {
             text-align: center;
             margin-bottom: 30px;
@@ -260,8 +241,114 @@
             box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
         }
 
-        .update-btn:active {
-            transform: translateY(0);
+        /* Donate Section Styles */
+        .donate-section {
+            border-top: 1px solid #e0e0e0;
+            margin-top: 20px;
+            padding-top: 20px;
+        }
+
+        .donate-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            justify-content: center;
+            margin-bottom: 15px;
+            color: #555;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .donate-buttons {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .donate-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .donate-btn.banking {
+            background: #2c3e50;
+            color: white;
+        }
+
+        .donate-btn.banking:hover {
+            background: #1a2632;
+            transform: translateY(-2px);
+        }
+
+        .donate-btn.coffee {
+            background: #ff813f;
+            color: white;
+        }
+
+        .donate-btn.coffee:hover {
+            background: #e56c2c;
+            transform: translateY(-2px);
+        }
+
+        .donate-qr {
+            text-align: center;
+            margin-top: 15px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 15px;
+            display: none;
+        }
+
+        .donate-qr.show {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .donate-qr img {
+            width: 150px;
+            height: 150px;
+            margin-bottom: 10px;
+        }
+
+        .donate-qr p {
+            font-size: 12px;
+            color: #666;
+            margin-top: 8px;
+            white-space: pre-line;
+        }
+
+        .close-qr {
+            background: none;
+            border: none;
+            color: #999;
+            cursor: pointer;
+            font-size: 20px;
+            float: right;
+            margin-top: -10px;
+        }
+
+        .close-qr:hover {
+            color: #333;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         @keyframes pulse {
@@ -276,14 +363,35 @@
         .playing {
             animation: pulse 2s ease-in-out infinite;
         }
+
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 50px;
+            font-size: 14px;
+            z-index: 1000;
+            animation: fadeInUp 0.3s ease;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateX(-50%) translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(-50%) translateY(0);
+            }
+        }
     </style>
 </head>
 <body>
     <div class="music-card">
-        <div class="listener-count" id="listenerCount">
-            222 người đang nghe
-        </div>
-        
         <div class="album-art">
             <span>🎵</span>
         </div>
@@ -341,12 +449,37 @@
                 🔄 Kiểm tra cập nhật
             </button>
         </div>
+
+        <!-- Donate Section -->
+        <div class="donate-section">
+            <div class="donate-title">
+                <span>☕</span>
+                <span>Ủng hộ phát triển</span>
+                <span>🎵</span>
+            </div>
+            <div class="donate-buttons">
+                <button class="donate-btn banking" onclick="showDonateQR('banking')">
+                    <span>🏦</span> Chuyển khoản
+                </button>
+                <button class="donate-btn coffee" onclick="showDonateQR('coffee')">
+                    <span>☕</span> Buy me a coffee
+                </button>
+            </div>
+            
+            <div id="donateQR" class="donate-qr">
+                <button class="close-qr" onclick="closeDonateQR()">✕</button>
+                <div style="text-align: center;">
+                    <img id="qrImage" src="" alt="QR Code">
+                    <p id="qrText"></p>
+                </div>
+            </div>
+        </div>
     </div>
 
     <audio id="audioPlayer" src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"></audio>
 
     <script>
-        // Playlist mẫu (có thể thay bằng link nhạc thực tế)
+        // Playlist mẫu
         const playlist = [
             {
                 name: "Bạc Phận",
@@ -367,7 +500,6 @@
         
         let currentSongIndex = 0;
         let isPlaying = false;
-        let listenerCount = 222;
         
         const audio = document.getElementById('audioPlayer');
         const playPauseBtn = document.getElementById('playPauseBtn');
@@ -380,9 +512,45 @@
         const currentTimeSpan = document.getElementById('currentTime');
         const durationSpan = document.getElementById('duration');
         const updateBtn = document.getElementById('updateBtn');
-        const listenerCountDiv = document.getElementById('listenerCount');
         const songNameSpan = document.querySelector('.song-name');
         const songArtistSpan = document.querySelector('.song-artist');
+        
+        // Donate data
+        const donateInfo = {
+            banking: {
+                qr: "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=STK:%20123456789%20-%20Vietcombank%20-%20NGUYEN%20VAN%20A",
+                text: "Ngân hàng Vietcombank\nSTK: 1234 56789\nChủ TK: NGUYEN VAN A"
+            },
+            coffee: {
+                qr: "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://buymeacoffee.com/mrpewios",
+                text: "https://buymeacoffee.com/mrpewios"
+            }
+        };
+        
+        // Hiển thị QR Donate
+        function showDonateQR(type) {
+            const info = donateInfo[type];
+            if (info) {
+                document.getElementById('qrImage').src = info.qr;
+                document.getElementById('qrText').innerHTML = info.text.replace(/\n/g, '<br>');
+                document.getElementById('donateQR').classList.add('show');
+                showToast(`Cảm ơn bạn đã quan tâm! ❤️`);
+            }
+        }
+        
+        function closeDonateQR() {
+            document.getElementById('donateQR').classList.remove('show');
+        }
+        
+        function showToast(message) {
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            setTimeout(() => {
+                toast.remove();
+            }, 2000);
+        }
         
         // Tải bài hát
         function loadSong(index) {
@@ -392,14 +560,12 @@
             audio.src = song.url;
             audio.load();
             
-            // Reset UI
             if (isPlaying) {
                 audio.play().catch(e => console.log('Auto-play bị chặn'));
             }
             updatePlayPauseButton();
         }
         
-        // Cập nhật nút play/pause
         function updatePlayPauseButton() {
             if (isPlaying) {
                 playPauseBtn.textContent = '⏸';
@@ -410,7 +576,6 @@
             }
         }
         
-        // Play/Pause
         function togglePlayPause() {
             if (isPlaying) {
                 audio.pause();
@@ -425,7 +590,6 @@
             updatePlayPauseButton();
         }
         
-        // Bài tiếp theo
         function nextSong() {
             currentSongIndex = (currentSongIndex + 1) % playlist.length;
             loadSong(currentSongIndex);
@@ -434,7 +598,6 @@
             }
         }
         
-        // Bài trước
         function prevSong() {
             currentSongIndex = (currentSongIndex - 1 + playlist.length) % playlist.length;
             loadSong(currentSongIndex);
@@ -443,19 +606,15 @@
             }
         }
         
-        // Cập nhật tiến độ
         function updateProgress() {
             if (audio.duration) {
                 const progress = (audio.currentTime / audio.duration) * 100;
                 progressFill.style.width = `${progress}%`;
-                
-                // Cập nhật thời gian
                 currentTimeSpan.textContent = formatTime(audio.currentTime);
                 durationSpan.textContent = formatTime(audio.duration);
             }
         }
         
-        // Format thời gian
         function formatTime(seconds) {
             if (isNaN(seconds)) return '0:00';
             const mins = Math.floor(seconds / 60);
@@ -463,7 +622,6 @@
             return `${mins}:${secs.toString().padStart(2, '0')}`;
         }
         
-        // Seek
         function setProgress(e) {
             const rect = progressBar.getBoundingClientRect();
             const percent = (e.clientX - rect.left) / rect.width;
@@ -472,18 +630,16 @@
             }
         }
         
-        // Thay đổi âm lượng
+        // Fix âm lượng - thêm event 'change' và đảm bảo audio volume được set
         function setVolume() {
-            const volume = volumeSlider.value / 100;
-            audio.volume = volume;
+            const volumeValueNum = volumeSlider.value / 100;
+            audio.volume = volumeValueNum;
             volumeValue.textContent = `${volumeSlider.value}%`;
+            console.log('Volume set to:', audio.volume); // Debug
         }
         
-        // Thay đổi tốc độ
         function setSpeed(speed) {
             audio.playbackRate = parseFloat(speed);
-            
-            // Cập nhật active button
             document.querySelectorAll('.speed-btn').forEach(btn => {
                 if (btn.dataset.speed === speed) {
                     btn.classList.add('active');
@@ -493,29 +649,13 @@
             });
         }
         
-        // Random số người nghe
-        function updateListenerCount() {
-            const change = Math.floor(Math.random() * 21) - 10; // -10 đến +10
-            let newCount = listenerCount + change;
-            newCount = Math.max(50, Math.min(500, newCount)); // Giới hạn 50-500
-            listenerCount = newCount;
-            listenerCountDiv.textContent = `${listenerCount} người đang nghe`;
-            
-            // Hiệu ứng nhấp nháy
-            listenerCountDiv.style.transform = 'scale(1.05)';
-            setTimeout(() => {
-                listenerCountDiv.style.transform = 'scale(1)';
-            }, 200);
-        }
-        
-        // Kiểm tra cập nhật (mô phỏng)
         function checkUpdate() {
             updateBtn.textContent = '🔄 Đang kiểm tra...';
             updateBtn.disabled = true;
             
             setTimeout(() => {
                 updateBtn.textContent = '✅ Đã cập nhật!';
-                updateListenerCount();
+                showToast('Đã cập nhật thành công!');
                 
                 setTimeout(() => {
                     updateBtn.textContent = '🔄 Kiểm tra cập nhật';
@@ -528,7 +668,11 @@
         playPauseBtn.addEventListener('click', togglePlayPause);
         prevBtn.addEventListener('click', prevSong);
         nextBtn.addEventListener('click', nextSong);
+        
+        // Fix âm lượng - thêm cả input và change event
         volumeSlider.addEventListener('input', setVolume);
+        volumeSlider.addEventListener('change', setVolume);
+        
         progressBar.addEventListener('click', setProgress);
         updateBtn.addEventListener('click', checkUpdate);
         
@@ -541,7 +685,11 @@
             }
         });
         
-        // Speed buttons
+        // Đảm bảo âm lượng được set ngay khi load
+        audio.addEventListener('canplay', () => {
+            setVolume();
+        });
+        
         document.querySelectorAll('.speed-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const speed = e.target.dataset.speed;
@@ -551,12 +699,8 @@
         
         // Khởi tạo
         loadSong(0);
-        setVolume();
+        setVolume(); // Set âm lượng ngay khi load
         
-        // Tự động cập nhật số người nghe mỗi 10 giây
-        setInterval(updateListenerCount, 10000);
-        
-        // Hiển thị thông báo khi sẵn sàng
         console.log('Music Player đã sẵn sàng!');
     </script>
 </body>
